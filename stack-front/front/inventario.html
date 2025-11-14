@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Inventario Farmacéutico</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --accent: #e74c3c;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+            --success: #2ecc71;
+            --warning: #f39c12;
+        }
+        
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333;
+            padding-bottom: 20px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 20px 0;
+            border-radius: 0 0 10px 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
+            border: none;
+            margin-bottom: 25px;
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, var(--secondary) 0%, #2980b9 100%);
+            color: white;
+            border-radius: 10px 10px 0 0 !important;
+            font-weight: 600;
+            padding: 15px 20px;
+        }
+        
+        .btn-primary {
+            background-color: var(--secondary);
+            border: none;
+            padding: 8px 16px;
+            font-weight: 600;
+        }
+        
+        .btn-outline-secondary {
+            border: 2px solid var(--secondary);
+            color: var(--secondary);
+            font-weight: 600;
+            padding: 8px 16px;
+        }
+        
+        .btn-outline-secondary:hover {
+            background-color: var(--secondary);
+            color: white;
+        }
+        
+        .table th {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .alert {
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .search-box {
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+        
+        .form-control {
+            padding: 10px 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .status-expired {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        
+        .status-warning {
+            color: #f39c12;
+            font-weight: bold;
+        }
+        
+        .status-good {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        
+        .low-stock {
+            background-color: #fff3cd !important;
+        }
+        
+        .expired {
+            background-color: #f8d7da !important;
+        }
+    </style>
+<script>
+(function() {
+  function getPort(key, def) {
+    const q = new URLSearchParams(window.location.search).get('port_' + key.toLowerCase());
+    const ls = localStorage.getItem('PORT_' + key.toUpperCase());
+    return q || ls || def;
+  }
+  const gw = getPort('gateway', 3000);
+  window.API_GATEWAY_BASE = `http://192.168.100.2:${gw}`;
+  window.API_GATEWAY = `${window.API_GATEWAY_BASE}/api`;
+
+  function baseFor(service) {
+    const p = getPort(service, null);
+    return p ? `http://192.168.100.2:${p}/api` : window.API_GATEWAY;
+  }
+  window.API_USUARIOS   = baseFor('usuarios');
+  window.API_INVENTARIO = baseFor('inventario');
+  window.API_COMPRAS    = baseFor('compras');
+  window.API_VENTAS     = baseFor('ventas');
+})();
+</script>
+</head>
+<body>
+    <div class="header text-center">
+        <div class="container">
+            <h1><i class="fas fa-pills me-2"></i> Sistema de Inventario Farmacéutico</h1>
+            <p class="lead">Consulta y gestión de productos farmacéuticos</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="mb-0"><i class="fas fa-search me-2"></i> Consulta de Inventario</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info" role="alert" id="infoMessage">
+                            <i class="fas fa-info-circle me-2"></i> 
+                            Conectando con el servidor...
+                        </div>
+
+                        <div class="search-box">
+                            <h4><i class="fas fa-filter me-2"></i> Buscar Productos</h4>
+                            
+                            <div class="row mb-4">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="productId" class="form-label">ID del Producto</label>
+                                        <input type="text" class="form-control" id="productId" placeholder="Ej: 1, 2, 3...">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="brandName" class="form-label">Nombre de Marca</label>
+                                        <input type="text" class="form-control" id="brandName" placeholder="Ej: Dolor, Ruproxeno...">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="genericName" class="form-label">Nombre Genérico</label>
+                                        <input type="text" class="form-control" id="genericName" placeholder="Ej: Rectanimerino, Bicarbonato...">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-end">
+                                <button class="btn btn-primary me-2" id="searchBtn">
+                                    <i class="fas fa-search me-1"></i> Buscar
+                                </button>
+                                <button class="btn btn-outline-secondary" id="clearBtn">
+                                    <i class="fas fa-broom me-1"></i> Limpiar
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive mt-4">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Marca</th>
+                                        <th>Genérico</th>
+                                        <th>Concentración</th>
+                                        <th>Presentación</th>
+                                        <th>Expiración</th>
+                                        <th>Cantidad</th>
+                                        <th>Precio Venta</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="inventoryTableBody">
+                                    <tr>
+                                        <td colspan="8" class="text-center py-4">Cargando datos del inventario...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="loading" id="loadingIndicator">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Cargando...</span>
+                            </div>
+                            <p class="mt-2">Buscando en el inventario...</p>
+                        </div>
+
+                        <div class="alert alert-danger mt-3" role="alert" id="errorMessage" style="display: none;">
+                            <!-- Mensajes de error -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Cargar datos del inventario al iniciar
+            loadInventoryData();
+
+            // Manejar clic en botón de búsqueda
+            document.getElementById('searchBtn').addEventListener('click', function() {
+                searchProducts();
+            });
+
+            // Manejar clic en botón de limpiar
+            document.getElementById('clearBtn').addEventListener('click', function() {
+                document.getElementById('productId').value = '';
+                document.getElementById('brandName').value = '';
+                document.getElementById('genericName').value = '';
+                loadInventoryData();
+            });
+        });
+
+        // Función para cargar datos del inventario
+        async function loadInventoryData() {
+            try {
+                showLoading(true);
+                hideError();
+                updateInfoMessage('Conectando con el servidor...');
+                
+                const response = await fetch('http://192.168.100.2:3003/api/inventario');
+                
+                if (!response.ok) {
+                    throw new Error(`Error ${response.status}: ${response.statusText}`);
+                }
+                
+                const inventoryData = await response.json();
+                
+                if (inventoryData && inventoryData.length > 0) {
+                    updateInfoMessage(`Se encontraron ${inventoryData.length} productos en el inventario`);
+                    renderInventoryTable(inventoryData);
+                } else {
+                    updateInfoMessage('No hay productos en el inventario');
+                    renderInventoryTable([]);
+                }
+                
+            } catch (error) {
+                console.error('Error de conexión:', error);
+                showError('Error al cargar inventario: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Función para buscar productos
+        async function searchProducts() {
+            try {
+                const productId = document.getElementById('productId').value;
+                const brandName = document.getElementById('brandName').value;
+                const genericName = document.getElementById('genericName').value;
+                
+                showLoading(true);
+                hideError();
+                
+                // Construir URL de búsqueda
+                const params = new URLSearchParams();
+                if (productId) params.append('id', productId);
+                if (brandName) params.append('marca', brandName);
+                if (genericName) params.append('generico', genericName);
+                
+                let url = 'http://192.168.100.2:3003/api/inventario';
+                if (params.toString()) {
+                    url += '?' + params.toString();
+                }
+                
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error('Error en búsqueda: ' + response.status);
+                }
+                
+                const searchResults = await response.json();
+                
+                if (searchResults && searchResults.length > 0) {
+                    updateInfoMessage(`Se encontraron ${searchResults.length} productos`);
+                    renderInventoryTable(searchResults);
+                } else {
+                    updateInfoMessage('No se encontraron productos con los criterios de búsqueda');
+                    renderInventoryTable([]);
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                showError('Error en búsqueda: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Función para renderizar la tabla
+        function renderInventoryTable(data) {
+            const tableBody = document.getElementById('inventoryTableBody');
+            tableBody.innerHTML = '';
+            
+            if (!data || data.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="text-center py-4">No se encontraron productos</td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            data.forEach(item => {
+                const row = document.createElement('tr');
+                
+                // Determinar clases según estado
+                let rowClass = '';
+                const cantidad = parseInt(item.cantidadStock) || 0;
+                if (cantidad < 10) {
+                    rowClass = 'low-stock';
+                }
+                
+                // Formatear fecha y verificar expiración - CORREGIDO para tu estructura de datos
+                let expClass = 'status-good';
+                let expText = 'N/A';
+                
+                // Extraer solo la parte de la fecha (antes de la "/")
+                let fechaExpiracion = item.rechabepiracion || item.fechaExpiracion || '';
+                if (fechaExpiracion && fechaExpiracion.includes('/')) {
+                    fechaExpiracion = fechaExpiracion.split('/')[0];
+                }
+                
+                if (fechaExpiracion) {
+                    try {
+                        const expDate = new Date(fechaExpiracion);
+                        const today = new Date();
+                        expText = formatDate(expDate);
+                        
+                        if (expDate < today) {
+                            expClass = 'status-expired';
+                            rowClass = 'expired';
+                        } else if (expDate < new Date(today.setMonth(today.getMonth() + 3))) {
+                            expClass = 'status-warning';
+                        }
+                    } catch (e) {
+                        expText = 'Fecha inválida';
+                    }
+                }
+                
+                // Asegurarse de que los valores estén formateados correctamente
+                const concentracion = item.concentracion || 0;
+                const precioVenta = parseFloat(item.predicVenta || item.precioVenta || 0);
+                
+                row.className = rowClass;
+                row.innerHTML = `
+                    <td>${item.idMedicamento || 'N/A'}</td>
+                    <td><strong>${item.nombreMarca || 'Sin marca'}</strong></td>
+                    <td>${item.nombreGenerico || 'Sin genérico'}</td>
+                    <td>${concentracion} ${item.umbMedida || item.undMedida || ''}</td>
+                    <td>${item.presentacion || 'N/A'}</td>
+                    <td class="${expClass}">${expText}</td>
+                    <td>${cantidad}</td>
+                    <td>$${precioVenta.toLocaleString('es-CO')}</td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+        }
+
+        // Función para formatear fecha
+        function formatDate(date) {
+            try {
+                return date.toLocaleDateString('es-ES', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                });
+            } catch (error) {
+                return 'Fecha inválida';
+            }
+        }
+
+        // Funciones auxiliares para UI
+        function showLoading(show) {
+            document.getElementById('loadingIndicator').style.display = show ? 'block' : 'none';
+        }
+        
+        function showError(message) {
+            const errorElement = document.getElementById('errorMessage');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+        }
+        
+        function hideError() {
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+        
+        function updateInfoMessage(message) {
+            document.getElementById('infoMessage').innerHTML = `<i class="fas fa-info-circle me-2"></i> ${message}`;
+        }
+    </script>
+</body>
+</html>

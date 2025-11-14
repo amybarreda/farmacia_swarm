@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Panel Vendedor</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body { background: linear-gradient(135deg,#ff5f6d,#ffc371); min-height: 100vh; }
+    .card-link { text-decoration: none; color: inherit; }
+    .card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(0,0,0,.15); }
+  </style>
+</head>
+<body class="py-4">
+  <div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h3 class="m-0">Panel del Vendedor</h3>
+      <div>
+        <span id="userBadge" class="badge text-bg-light me-2"></span>
+        <a class="btn btn-outline-secondary" href="login.html" id="btnLogout">Cerrar sesión</a>
+      </div>
+    </div>
+
+    <div class="row g-3">
+      <div class="col-md-4">
+        <a href="ver_ventas.html" class="card-link">
+          <div class="card h-100">
+            <div class="card-body">
+              <h5 class="card-title">Ver ventas</h5>
+              <p class="card-text text-muted">Consulta tus ventas registradas y calcula el total del día.</p>
+              <span class="btn btn-sm btn-primary">Ir a ventas</span>
+            </div>
+          </div>
+        </a>
+      </div>
+      <div class="col-md-4">
+        <a href="ver_inventario.html" class="card-link">
+          <div class="card h-100">
+            <div class="card-body">
+              <h5 class="card-title">Ver inventario</h5>
+              <p class="card-text text-muted">Consulta productos y actualiza existencias rápidamente.</p>
+              <span class="btn btn-sm btn-primary">Ir a inventario</span>
+            </div>
+          </div>
+        </a>
+      </div>
+      <div class="col-md-4">
+        <a href="hacer_venta.html" class="card-link">
+          <div class="card h-100">
+            <div class="card-body">
+              <h5 class="card-title">Hacer venta</h5>
+              <p class="card-text text-muted">Arma una venta con varios ítems y regístrala.</p>
+              <span class="btn btn-sm btn-primary">Crear venta</span>
+            </div>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Seguridad mínima
+    const rol = localStorage.getItem('rolUsuario');
+    if (rol !== 'employer') { window.location.href = 'login.html'; }
+
+    // UI
+    const nombre = localStorage.getItem('nombreUsuario') || localStorage.getItem('idUsuario') || 'Vendedor';
+    document.getElementById('userBadge').textContent = `Sesión: ${nombre}`;
+
+    // Logout
+    document.getElementById('btnLogout').addEventListener('click', () => {
+      localStorage.clear();
+    });
+  </script>
+</body>
+</html>

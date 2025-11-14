@@ -1,0 +1,163 @@
+version: "3.9"
+
+networks:
+  farmanet:
+    driver: overlay
+    attachable: true
+
+volumes:
+  dbdata:
+
+services:
+  db:
+    image: mariadb:10.11
+    environment:
+      MYSQL_ROOT_PASSWORD: amymysql
+    volumes:
+      - dbdata:/var/lib/mysql
+      - ./db:/docker-entrypoint-initdb.d:ro
+    networks:
+      - farmanet
+    deploy:
+      placement:
+        constraints:
+          - node.hostname == servidorUbuntu1
+
+  compras:
+    image: amybarreda/compras-back:1.0
+    environment:
+      DB_HOST: db
+      DB_USER: root
+      DB_PASSWORD: amymysql
+      DB_NAME: compras
+      DB_PORT: "3306"
+      USUARIOS_BASE: "http://usuarios:3005/api/usuarios"
+      INVENTARIO_BASE: "http://inventario:3003/api/inventario"
+      PORT: "3002"
+    networks:
+      - farmanet
+    ports:
+      - "3002:3002"  # expuesto; si usarás solo HAProxy back, puedes quitarlo
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - node.hostname == servidorUbuntu1
+
+  inventario:
+    image: amybarreda/inventario-back:1.2
+    environment:
+      DB_HOST: db
+      DB_USER: root
+      DB_PASSWORD: amymysql
+      DB_NAME: inventario
+      DB_PORT: "3306"
+      PORT: "3003"
+    networks:
+      - farmanet
+    ports:
+      - "3003:3003"
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - node.hostname == servidorUbuntu1
+
+  ventas:
+    image: amybarreda/ventas-back:1.0
+    environment:
+      DB_HOST: db
+      DB_USER: root
+      DB_PASSWORD: amymysql
+      DB_NAME: ventas
+      DB_PORT: "3306"
+      PORT: "3004"
+    networks:
+      - farmanet
+    ports:
+      - "3004:3004"
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - node.hostname == servidorUbuntu1
+
+  usuarios:
+    image: amybarreda/usuarios-back:1.2
+    environment:
+      DB_HOST: db
+      DB_USER: root
+      DB_PASSWORD: amymysql
+      DB_NAME: usuarios
+      DB_PORT: "3306"
+      PORT: "3005"
+    networks:
+      - farmanet
+    ports:
+      - "3005:3005"
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - node.hostname == servidorUbuntu1
+
+  front:
+    image: amybarreda/front-web:1.0
+    # Si tu front hace fetch directo al backend por IP/puerto del host,
+    # mantén publicados los puertos de los backends o usa el HAProxy back.
+    networks:
+      - farmanet
+    # Si quisieras exponer el front directo (no recomendado si ya tienes HAProxy front):
+    # ports:
+    #   - "8080:80"
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.hostname == servidorUbuntu2
+
+  # HAProxy para el FRONT (nodo servidorUbuntu2)
+  haproxy_front:
+    image: haproxy:2.8
+    networks:
+      - farmanet
+    ports:
+      - target: 8080
+        published: 8080
+        mode: host
+      - target: 9000
+        published: 9000
+        mode: host
+    volumes:
+      - /home/vagrant/farmaciadocker/stack-front/haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    deploy:
+      placement:
+        constraints:
+          - node.hostname == servidorUbuntu2
+
+  # HAProxy para el BACK (nodo servidorUbuntu1)
+  haproxy_back:
+    image: haproxy:2.8
+    networks:
+      - farmanet
+    ports:
+      - target: 8081
+        published: 8081
+        mode: host
+      - target: 9001
+        published: 9001
+        mode: host
+    volumes:
+      - /home/vagrant/farmaciadocker/stack-back/haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    deploy:
+      placement:
+        constraints:
+          - node.hostname == servidorUbuntu1

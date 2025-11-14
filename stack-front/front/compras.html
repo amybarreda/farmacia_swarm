@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Compras - Panel</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet" />
+  <style>
+    body { background: linear-gradient(135deg,#6dd5fa,#ffffff); min-height:100vh; }
+    .card { border-radius: 14px; box-shadow: 0 8px 18px rgba(0,0,0,.12); }
+    .card:hover { transform: translateY(-1px); box-shadow: 0 12px 26px rgba(0,0,0,.15); }
+    .menu a.card-link, .menu button.card-link { text-decoration:none; color: inherit; display:block; width:100%; background:none; border:none; text-align:left; padding:0; }
+    table th { background:#0d6efd; color:#fff; }
+    pre { background:#f8f9fa; padding:6px 8px; border-radius:6px; font-size:.84rem; }
+    .section-title { border-left: 6px solid #0d6efd; padding-left:.6rem; }
+    .hidden { display:none !important; }
+  </style>
+</head>
+<body class="p-3">
+  <div class="container">
+
+    <!-- TOP BAR -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div class="d-flex align-items-center gap-3">
+        <h3 class="m-0">Panel de Compras</h3>
+        <span id="userBadge" class="badge text-bg-light"></span>
+      </div>
+      <div class="d-flex gap-2">
+        <a class="btn btn-outline-secondary btn-sm" href="index.html">Inicio</a>
+        <button id="btnLogout" class="btn btn-outline-danger btn-sm">Cerrar sesión</button>
+      </div>
+    </div>
+
+    <!-- MENÚ (3 tarjetas) -->
+    <div class="row menu g-3 mb-4">
+      <div class="col-md-4">
+        <a class="card-link" href="ver_inventario_compras.html">
+          <div class="card h-100">
+            <div class="card-body">
+              <h5 class="card-title"><i class="bi bi-box-seam"></i> Ver inventario</h5>
+              <p class="card-text text-muted">Consulta productos y existencias.</p>
+              <span class="btn btn-sm btn-primary">Ir a inventario</span>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <div class="col-md-4">
+        <button class="card-link" id="btnVerVentas">
+          <div class="card h-100">
+            <div class="card-body">
+              <h5 class="card-title"><i class="bi bi-receipt"></i> Ver ventas</h5>
+              <p class="card-text text-muted">Listado de ventas registradas.</p>
+              <span class="btn btn-sm btn-primary">Mostrar ventas</span>
+            </div>
+          </div>
+        </button>
+      </div>
+
+      <div class="col-md-4">
+        <button class="card-link" id="btnVerOrdenes">
+          <div class="card h-100">
+            <div class="card-body">
+              <h5 class="card-title"><i class="bi bi-bag-check"></i> Órdenes de compra</h5>
+              <p class="card-text text-muted">Crea, edita, busca y elimina órdenes.</p>
+              <span class="btn btn-sm btn-primary">Administrar órdenes</span>
+            </div>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <!-- MENSAJES GLOBALES -->
+    <div id="mensaje" class="alert d-none"></div>
+
+    <!-- ============ VENTAS (LISTA) ============ -->
+    <section id="ventasSection" class="hidden mb-4">
+      <div class="card p-3">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h4 class="m-0"><i class="bi bi-receipt"></i> Ventas</h4>
+          <div class="d-flex gap-2 align-items-center">
+            <button id="btnTotalVentas" class="btn btn-sm btn-outline-success">Calcular total ventas</button>
+            <button id="btnRecargarVentas" class="btn btn-sm btn-outline-primary">Recargar</button>
+            <span id="totalBadge" class="badge text-bg-success" style="display:none;"></span>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-striped" id="ventasTable">
+            <thead>
+              <tr>
+                <th>ID</th><th>Vendedor</th><th>ID Medicamento</th><th>Producto</th>
+                <th>Cant.</th><th>Medio Pago</th><th>Precio Unit.</th><th>Total</th><th>Fecha</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ ÓRDENES DE COMPRA (CRUD) ============ -->
+    <section id="ordenesSection" class="mb-4">
+      <h4 class="section-title mb-3">Órdenes de compra</h4>
+
+      <!-- Formulario nueva/editar -->
+      <div class="card p-3 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h6 class="m-0"><i class="bi bi-file-earmark-plus"></i> Registrar / Editar orden</h6>
+          <button id="btnRecargar" class="btn btn-sm btn-outline-primary">Recargar lista</button>
+        </div>
+
+        <form id="ordenForm">
+          <input type="hidden" id="idOrden" name="idOrden" />
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Proveedor</label>
+              <input type="text" name="nombreProveedor" class="form-control" required />
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Fecha de orden</label>
+              <input type="date" name="fechaOrden" class="form-control" required />
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Estado</label>
+              <select name="estado" class="form-select">
+                <option value="pendiente">Pendiente</option>
+                <option value="aprobada">Aprobada</option>
+                <option value="enviada">Enviada</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Cantidad</label>
+              <input type="number" name="cantidadCompra" class="form-control" min="1" />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Monto total</label>
+              <input type="number" step="0.01" name="montoTotal" class="form-control" min="0" />
+            </div>
+            <div class="col-12">
+              <label class="form-label">Detalles (JSON)</label>
+              <textarea name="detalles" class="form-control" rows="3" required>[
+  {"idMedicamento":1,"cantidad":10,"precioUnit":4500},
+  {"idMedicamento":2,"cantidad":5,"precioUnit":6200}
+]</textarea>
+              <div class="form-text">
+                Debe ser un <b>arreglo</b> de ítems con <code>idMedicamento</code> y <code>cantidad</code>. Si incluyes <code>precioUnit</code> se calculará el total.
+              </div>
+              <button type="button" id="btnCalcularDetalles" class="btn btn-sm btn-outline-secondary mt-2">
+                Calcular desde detalles
+              </button>
+            </div>
+          </div>
+          <div class="mt-3 d-flex gap-2">
+            <button type="submit" id="btnSubmit" class="btn btn-primary">
+              <i class="bi bi-save"></i> Registrar orden
+            </button>
+            <button type="button" id="btnCancelar" class="btn btn-secondary d-none">
+              <i class="bi bi-x-circle"></i> Cancelar
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Buscador -->
+      <div class="card p-3 mb-4">
+        <h6 class="mb-2"><i class="bi bi-search"></i> Buscar orden por ID</h6>
+        <form id="buscarForm" class="row g-2">
+          <div class="col-md-8">
+            <input type="number" id="buscarId" class="form-control" placeholder="Ingrese ID de orden" />
+          </div>
+          <div class="col-md-4">
+            <button type="submit" class="btn btn-outline-primary w-100">
+              <i class="bi bi-search"></i> Buscar
+            </button>
+          </div>
+        </form>
+        <div id="resultadoBusqueda" class="alert alert-info mt-3 d-none"></div>
+      </div>
+
+      <!-- Tabla -->
+      <div class="card p-3">
+        <h6 class="mb-2"><i class="bi bi-list-check"></i> Lista de órdenes</h6>
+        <div class="table-responsive">
+          <table class="table table-bordered table-striped align-middle">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Proveedor</th>
+                <th>Fecha</th>
+                <th>Estado</th>
+                <th>Detalles</th>
+                <th>Cantidad</th>
+                <th>Monto total</th>
+                <th style="width:140px">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tablaOrdenes"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // ====== Guardia de sesión (compras/admin) ======
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    if (!user) { alert('Sesión inválida.'); location.href = 'login.html'; }
+    const rol = String(user.role ?? user.tipo ?? user.rol ?? '').toLowerCase();
+    if (rol !== 'compras' && rol !== 'admin') {
+      alert('Acceso no autorizado.'); location.href = 'login.html';
+    }
+    document.getElementById('userBadge').textContent = `Sesión: ${user.nombre || user.idUsuario}`;
+
+    document.getElementById('btnLogout').addEventListener('click', () => {
+      localStorage.clear(); location.href = 'login.html';
+    });
+
+    // ====== API ======
+    const API = {
+      compras: 'http://192.168.100.2:3002/api/compras',
+      ventas:  'http://192.168.100.2:3004/api/ventas'
+    };
+
+    // ====== VISTAS ======
+    const ventasSection  = document.getElementById('ventasSection');
+    const ordenesSection = document.getElementById('ordenesSection');
+    document.getElementById('btnVerVentas').addEventListener('click', () => showSection('ventas'));
+    document.getElementById('btnVerOrdenes').addEventListener('click', () => showSection('ordenes'));
+
+    function showSection(which) {
+      if (which === 'ventas') {
+        ventasSection.classList.remove('hidden');
+        ordenesSection.classList.add('hidden');
+        cargarVentas();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        ordenesSection.classList.remove('hidden');
+        ventasSection.classList.add('hidden');
+        window.location.hash = '#ordenesSection';
+      }
+    }
+
+    // ====== Utils ======
+    const mensaje = document.getElementById('mensaje');
+    function mostrarMensaje(texto, tipo='success') {
+      mensaje.textContent = texto;
+      mensaje.className = `alert alert-${tipo} mt-3`;
+      mensaje.classList.remove('d-none');
+      clearTimeout(mensaje._t);
+      mensaje._t = setTimeout(() => mensaje.classList.add('d-none'), 3000);
+    }
+    const formatMoney = v => Number(v||0).toLocaleString('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0});
+    const safeParseJSON = str => { try { return JSON.parse(str); } catch { return null; } };
+    const normalizeDetalles = det => Array.isArray(det) ? det : (typeof det === 'string' ? (safeParseJSON(det) ?? det) : det);
+
+    function totalesDesdeDetalles(detalles){
+      let cantidad = 0, total = 0;
+      (detalles||[]).forEach(d=>{
+        const c = Number(d.cantidad||0);
+        const pu = Number(d.precioUnit||0);
+        cantidad += c;
+        total += c * pu;
+      });
+      return { cantidad, total };
+    }
+
+    // ====== ORDENES: CRUD ======
+    const tabla = document.getElementById('tablaOrdenes');
+    const ordenForm = document.getElementById('ordenForm');
+    const btnSubmit = document.getElementById('btnSubmit');
+    const btnCancelar = document.getElementById('btnCancelar');
+    const buscarForm = document.getElementById('buscarForm');
+    const resultadoBusqueda = document.getElementById('resultadoBusqueda');
+    const btnRecargar = document.getElementById('btnRecargar');
+    let editando = false;
+
+    // Calcular desde detalles (rellena campos)
+    document.getElementById('btnCalcularDetalles').addEventListener('click', ()=>{
+      const det = safeParseJSON(ordenForm.detalles.value.trim());
+      if (!Array.isArray(det)) return mostrarMensaje('Detalles no es un JSON válido', 'danger');
+      const { cantidad, total } = totalesDesdeDetalles(det);
+      if (!ordenForm.cantidadCompra.value) ordenForm.cantidadCompra.value = cantidad || '';
+      if (!ordenForm.montoTotal.value && total>0) ordenForm.montoTotal.value = total;
+    });
+
+    async function cargarOrdenes() {
+      try {
+        const resp = await fetch(API.compras);
+        if (!resp.ok) throw new Error('HTTP '+resp.status);
+        const ordenes = await resp.json();
+        tabla.innerHTML = '';
+        if (!Array.isArray(ordenes) || !ordenes.length) {
+          tabla.innerHTML = `<tr><td colspan="8" class="text-center text-muted">Sin registros</td></tr>`;
+          return;
+        }
+        ordenes.forEach(item => {
+          const detalles = normalizeDetalles(item.detalles);
+          const pretty = typeof detalles === 'string'
+            ? detalles
+            : `<pre class="m-0">${JSON.stringify(detalles, null, 2)}</pre>`;
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${item.idOrden}</td>
+            <td>${item.nombreProveedor}</td>
+            <td>${item.fechaOrden ? String(item.fechaOrden).substring(0,10) : ''}</td>
+            <td>${item.estado}</td>
+            <td>${pretty}</td>
+            <td>${item.cantidadCompra}</td>
+            <td>${formatMoney(item.montoTotal)}</td>
+            <td class="d-flex gap-1">
+              <button class="btn btn-warning btn-sm" data-edit="${item.idOrden}" title="Editar"><i class="bi bi-pencil"></i></button>
+              <button class="btn btn-danger btn-sm" data-del="${item.idOrden}" title="Eliminar"><i class="bi bi-trash"></i></button>
+            </td>`;
+          tabla.appendChild(tr);
+        });
+
+        tabla.querySelectorAll('[data-edit]').forEach(btn => btn.addEventListener('click', () => editarOrden(btn.getAttribute('data-edit'))));
+        tabla.querySelectorAll('[data-del]').forEach(btn => btn.addEventListener('click', () => eliminarOrden(btn.getAttribute('data-del'))));
+      } catch (e) {
+        console.error(e); mostrarMensaje('Error al cargar órdenes', 'danger');
+      }
+    }
+
+    ordenForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      // 1) Parsear y validar detalles
+      const det = safeParseJSON(e.target.detalles.value.trim());
+      if (!Array.isArray(det) || det.length===0) {
+        return mostrarMensaje('El campo Detalles debe ser un arreglo JSON.', 'danger');
+      }
+      const inval = det.find(d => !(d && Number(d.idMedicamento) && Number(d.cantidad)));
+      if (inval) {
+        return mostrarMensaje('Cada ítem debe incluir idMedicamento y cantidad.', 'danger');
+      }
+
+      // 2) Calcular totales si faltan
+      let cantidadCompra = parseInt(e.target.cantidadCompra.value || '0', 10);
+      let montoTotal = parseFloat(e.target.montoTotal.value || '0');
+      if (!cantidadCompra || !montoTotal) {
+        const { cantidad, total } = totalesDesdeDetalles(det);
+        if (!cantidadCompra) cantidadCompra = cantidad;
+        if (!montoTotal) montoTotal = total;
+      }
+
+      // 3) Armar payload (incluye idUsuario)
+      const payload = {
+        idUsuario: user.idUsuario,
+        nombreProveedor: e.target.nombreProveedor.value.trim(),
+        fechaOrden: e.target.fechaOrden.value,
+        estado: e.target.estado.value,
+        cantidadCompra,
+        montoTotal,
+        detalles: det
+      };
+
+      const idOrden = e.target.idOrden.value;
+      const isEdit = Boolean(editando && idOrden);
+
+      try {
+        const resp = await fetch(isEdit ? `${API.compras}/${idOrden}` : API.compras, {
+          method: isEdit ? 'PUT' : 'POST',
+          headers: { 'Content-Type':'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await resp.json().catch(()=> ({}));
+        if (resp.ok) {
+          ordenForm.reset(); document.getElementById('idOrden').value = '';
+          editando = false; btnSubmit.textContent = 'Registrar orden'; btnCancelar.classList.add('d-none');
+          mostrarMensaje(data.mensaje || 'Operación exitosa'); cargarOrdenes();
+        } else {
+          mostrarMensaje(data.error || 'Error al guardar la orden', 'danger');
+        }
+      } catch (e) {
+        console.error(e); mostrarMensaje('Error de red al guardar la orden', 'danger');
+      }
+    });
+
+    async function editarOrden(id) {
+      try {
+        const resp = await fetch(`${API.compras}/${id}`);
+        if (!resp.ok) throw new Error('HTTP '+resp.status);
+        const orden = await resp.json();
+        document.getElementById('idOrden').value = orden.idOrden;
+        ordenForm.nombreProveedor.value = orden.nombreProveedor;
+        ordenForm.fechaOrden.value = (orden.fechaOrden || '').substring(0,10);
+        ordenForm.estado.value = orden.estado;
+        ordenForm.cantidadCompra.value = orden.cantidadCompra;
+        ordenForm.montoTotal.value = orden.montoTotal;
+        ordenForm.detalles.value = JSON.stringify(normalizeDetalles(orden.detalles), null, 2);
+        editando = true; btnSubmit.textContent = 'Actualizar orden'; btnCancelar.classList.remove('d-none');
+        window.location.hash = '#ordenesSection';
+      } catch (e) {
+        console.error(e); mostrarMensaje('Error al cargar la orden', 'danger');
+      }
+    }
+
+    btnCancelar.addEventListener('click', () => {
+      ordenForm.reset(); document.getElementById('idOrden').value = '';
+      editando = false; btnSubmit.textContent = 'Registrar orden'; btnCancelar.classList.add('d-none');
+    });
+
+    async function eliminarOrden(id) {
+      if (!confirm('¿Seguro que deseas eliminar esta orden?')) return;
+      try {
+        const resp = await fetch(`${API.compras}/${id}`, { method:'DELETE' });
+        const data = await resp.json().catch(()=> ({}));
+        if (resp.ok) { mostrarMensaje(data.mensaje || 'Orden eliminada con éxito'); cargarOrdenes(); }
+        else { mostrarMensaje(data.error || 'Error al eliminar la orden', 'danger'); }
+      } catch (e) {
+        console.error(e); mostrarMensaje('Error de red al eliminar la orden', 'danger');
+      }
+    }
+
+    buscarForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('buscarId').value;
+      resultadoBusqueda.classList.add('d-none'); if (!id) return;
+      try {
+        const resp = await fetch(`${API.compras}/${id}`);
+        const data = await resp.json().catch(()=> ({}));
+        if (resp.ok) {
+          resultadoBusqueda.textContent = `Orden #${data.idOrden} · Proveedor: ${data.nombreProveedor} · Estado: ${data.estado} · Monto: ${formatMoney(data.montoTotal)}`;
+          resultadoBusqueda.className = 'alert alert-info mt-3'; resultadoBusqueda.classList.remove('d-none');
+        } else {
+          resultadoBusqueda.textContent = data.error || 'Orden no encontrada';
+          resultadoBusqueda.className = 'alert alert-danger mt-3'; resultadoBusqueda.classList.remove('d-none');
+        }
+      } catch (e) {
+        resultadoBusqueda.textContent = 'Error al conectar con el servidor';
+        resultadoBusqueda.className = 'alert alert-danger mt-3'; resultadoBusqueda.classList.remove('d-none');
+      }
+    });
+
+    btnRecargar.addEventListener('click', cargarOrdenes);
+
+    // ====== VENTAS: LISTA ======
+    const ventasTBody   = document.querySelector('#ventasTable tbody');
+    const totalBadge    = document.getElementById('totalBadge');
+    const btnRecVentas  = document.getElementById('btnRecargarVentas');
+    const btnTotVentas  = document.getElementById('btnTotalVentas');
+    let ventasCache = [];
+
+    async function cargarVentas() {
+      const r = await fetch(API.ventas);
+      const ventas = await r.json();
+      ventasCache = Array.isArray(ventas) ? ventas : [];
+      ventasTBody.innerHTML = '';
+      if (!ventasCache.length) {
+        ventasTBody.innerHTML = `<tr><td colspan="9" class="text-center text-muted">Sin registros</td></tr>`;
+        totalBadge.style.display = 'none';
+        return;
+      }
+      ventasCache.forEach(v => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${v.idVenta ?? ''}</td>
+          <td>${v.idVendedor ?? ''}</td>
+          <td>${v.idMedicamento ?? ''}</td>
+          <td>${v.nombreMedicamento ?? ''}</td>
+          <td>${v.cantidadVendida ?? ''}</td>
+          <td>${v.medioPago ?? ''}</td>
+          <td>${formatMoney(v.precioUnitario)}</td>
+          <td>${formatMoney(v.totalVenta)}</td>
+          <td>${v.fechaVenta ? new Date(v.fechaVenta).toLocaleString('es-CO') : ''}</td>`;
+        ventasTBody.appendChild(tr);
+      });
+      totalBadge.style.display = 'none';
+    }
+
+    btnRecVentas.addEventListener('click', cargarVentas);
+    btnTotVentas.addEventListener('click', () => {
+      const total = ventasCache.reduce((acc, v) => acc + Number(v.totalVenta||0), 0);
+      totalBadge.textContent = 'Total: ' + formatMoney(total);
+      totalBadge.style.display = 'inline-block';
+    });
+
+    // ====== Inicio ======
+    window.addEventListener('DOMContentLoaded', () => {
+      showSection('ordenes');
+      cargarOrdenes();
+    });
+  </script>
+</body>
+</html>

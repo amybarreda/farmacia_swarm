@@ -1,0 +1,9 @@
+FROM amybarreda/front-web:1.0
+
+# Cambia la IP del gateway y fuerza 8081 como default
+# (reemplaza en todos los HTML/JS estáticos si hiciera falta)
+RUN set -eux; \
+    webroot="/usr/local/apache2/htdocs"; \
+    grep -RIl '192.168.100.2' "$webroot" | xargs -r sed -i 's/192\.168\.100\.2/192.168.100.3/g'; \
+    grep -RIl 'getPort(' "$webroot" | xargs -r sed -i "s/const gw = getPort('gateway', [0-9][0-9]*/const gw = getPort('gateway', 8081/g"
+
