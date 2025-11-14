@@ -286,6 +286,6 @@ docker volume rm <nombre_del_volumen_dbdata>
 
 ## 👩‍💻 Autora
 
-Proyecto desarrollado por **Amy Barreda**.
+Proyecto desarrollado por **Amy Barreda**, **Juan Esteban Valencia**, **Ana Isabel Lopera** y **Sahara Narvaez**.
 Imágenes Docker públicas (backend y frontend) con el prefijo: `amybarreda/*`
 Repositorio: [https://github.com/amybarreda/farmacia_swarm](https://github.com/amybarreda/farmacia_swarm)
