@@ -44,7 +44,7 @@ placement:
   constraints:
     - node.hostname == servidorUbuntu1
     # o servidorUbuntu2
-
+````
 
 en el `docker-compose.yml`.
 
@@ -286,8 +286,6 @@ docker volume rm <nombre_del_volumen_dbdata>
 
 ## 👩‍💻 Autora
 
-Proyecto desarrollado por **Amy Barreda**, **Juan Esteban Valencia**, **Ana Isabel Lopera** y **SAHARA NARVAEZ**.
+Proyecto desarrollado por **Amy Barreda**.
 Imágenes Docker públicas (backend y frontend) con el prefijo: `amybarreda/*`
 Repositorio: [https://github.com/amybarreda/farmacia_swarm](https://github.com/amybarreda/farmacia_swarm)
-
-```
