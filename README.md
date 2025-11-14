@@ -1,36 +1,46 @@
-# Farmacia – Microservicios en Docker Swarm
+# 🏥 Farmacia – App en Microservicios con Docker Swarm
 
-Aplicación de gestión de farmacia desplegada como **microservicios en Docker Swarm**, repartida en **dos máquinas virtuales**:
+Esta aplicación es un sistema de gestión de farmacia desplegado como **microservicios** (backend + frontend) usando **Docker Swarm** y **HAProxy** como balanceador de carga.
 
-- `servidorUbuntu1`: **manager** del Swarm, ejecuta el **backend** (`stack-back`) y la base de datos.
-- `servidorUbuntu2`: **worker** del Swarm, ejecuta el **frontend** (`stack-front`).
+Todo se levanta desde **un solo archivo** `docker-compose.yml`, que define:
 
-Cada grupo (front y back) tiene su propio **balanceador de carga**.
+- Base de datos **MariaDB**
+- Microservicios backend:
+  - `compras`
+  - `inventario`
+  - `usuarios`
+  - `ventas`
+- Aplicación de **frontend**
+- **HAProxy** para el front
+- **HAProxy** para el back
+
+La arquitectura está pensada para 2 máquinas Ubuntu:
+
+- `servidorUbuntu1` → corre **DB + backend + HAProxy back**
+- `servidorUbuntu2` → corre **frontend + HAProxy front**
+
+> Si no tienes estos hostnames, puedes cambiarlos en el archivo `docker-compose.yml`.
 
 ---
 
-## Arquitectura general
+## ✅ 1. Requisitos previos
 
-### Infraestructura
+1. **Dos máquinas Ubuntu** (físicas o virtuales) con:
+   - Acceso a Internet
+   - Puertos abiertos:
+     - 8080 y 9000 en `servidorUbuntu2` (front + stats front)
+     - 8081 y 9001 en `servidorUbuntu1` (API back + stats back)
+2. **Docker** instalado en ambas máquinas  
+   Guía oficial: buscar “Install Docker Engine on Ubuntu”.
+3. **Docker Swarm** inicializado (lo hacemos en el siguiente paso).
+4. Opcional pero recomendado: que las máquinas tengan hostname:
+   - `servidorUbuntu1` ip: 192.168.100.2
+   - `servidorUbuntu2` ip: 192.168.100.3
 
-- 2 máquinas virtuales Linux (Ubuntu):
-  - `servidorUbuntu1`  
-    - Nodo **manager** del cluster Swarm.  
-    - Carpeta `/farmaciadocker/stack-back`  
-    - Ejecuta:
-      - Microservicios de backend (`compras`, `inventario`, `usuarios`, `ventas`).
-      - Servicio de base de datos **MariaDB** (carpeta `db`).
-      - Balanceador de carga para el backend.
-  - `servidorUbuntu2`  
-    - Nodo **worker** del cluster Swarm.  
-    - Carpeta `/farmaciadocker/stack-front`  
-    - Ejecuta:
-      - Aplicación de frontend.
-      - Balanceador de carga para el frontend.
+Si usas otros nombres, deberás ajustar las líneas:
 
-Ambas VMs tienen una carpeta base:
-
-```text
-/farmaciadocker
-├── stack-back/   # en servidorUbuntu1 (backend + DB)
-└── stack-front/  # en servidorUbuntu2 (frontend)
+```yaml
+placement:
+  constraints:
+    - node.hostname == servidorUbuntu1
+    # o servidorUbuntu2
