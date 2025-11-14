@@ -284,7 +284,7 @@ docker volume rm <nombre_del_volumen_dbdata>
 
 ---
 
-## 👩‍💻 Autora
+## 👩‍💻 Autores
 
 Proyecto desarrollado por **Amy Barreda**, **Juan Esteban Valencia**, **Ana Isabel Lopera** y **Sahara Narvaez**.
 Imágenes Docker públicas (backend y frontend) con el prefijo: `amybarreda/*`
