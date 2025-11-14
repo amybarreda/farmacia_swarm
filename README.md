@@ -1,4 +1,3 @@
-````markdown
 # 🏥 Farmacia – App en Microservicios con Docker Swarm
 
 Esta aplicación es un sistema de gestión de farmacia desplegado como **microservicios** (backend + frontend) usando **Docker Swarm** y **HAProxy** como balanceador de carga.
@@ -45,7 +44,7 @@ placement:
   constraints:
     - node.hostname == servidorUbuntu1
     # o servidorUbuntu2
-````
+
 
 en el `docker-compose.yml`.
 
